@@ -101,9 +101,14 @@ while IFS= read -r allocation_id; do
 	esac
 	run_stage "allocation $allocation_id checks read" "$tmp/current_checks.json" \
 		nomad_api "/v1/allocation/$allocation_id/checks"
-	# Nomad serializes a missing check-store map as JSON null for allocations
-	# without Nomad-native service checks. Keep that distinct from a malformed
-	# response, and expose the same empty checks array as an empty object does.
+	# Nomad serializes a missing check-store map as JSON null, and a successful
+	# checks read may instead return zero bytes. Both are an empty map. Rewrite
+	# only a zero-length body so whitespace-only and other nonempty responses
+	# stay invalid, and only after run_stage has kept a provider failure's own
+	# exit code.
+	if [ ! -s "$tmp/current_checks.json" ]; then
+		printf '%s\n' '{}' >"$tmp/current_checks.json"
+	fi
 	if ! jq -es 'length == 1 and (.[0] == null or (.[0] | type == "object"))' \
 		"$tmp/current_checks.json" >/dev/null; then
 		printf 'nomad.job_health_snapshot: allocation %s checks read returned invalid JSON; expected object or null\n' "$allocation_id" >&2

@@ -18,6 +18,15 @@ if [ "$1" = operator ] && [ "$2" = api ] && [ "$3" = -X ] && [ "$4" = GET ]; the
 				null) printf '%s\n' null ;;
 				checked) printf '%s\n' '{"check-1":{"ID":"check-1","Check":"ready","Group":"api","Service":"web","Mode":"healthiness","Status":"success","Output":"ok"}}' ;;
 				malformed) printf '%s\n' '[]' ;;
+				# Zero bytes, not a newline. A whitespace-only body stays invalid.
+				empty) ;;
+				empty-object) printf '%s\n' '{}' ;;
+				whitespace-only) printf '%s\n' '   ' ;;
+				scalar) printf '%s\n' '1' ;;
+				multi-value) printf '%s\n' 'null' '{}' ;;
+				malformed-json) printf '%s\n' '{' ;;
+				# Empty stdout must not hide the provider's own status.
+				command-failure) exit 7 ;;
 				*) exit 2 ;;
 			esac
 			;;

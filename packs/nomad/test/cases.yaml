@@ -195,7 +195,7 @@ cases:
       PATH: /packs/nomad/test/fixtures/snapshot-checked-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     args: {job: packtest-health}
     expect:
-      stdout_contains: ['"checks":[{', '"id":"check-1"', '"status":"success"']
+      stdout_contains: ['"checks":[{', '"id":"check-1"', '"status":"success"', '"output":"ok"']
   - name: nomad.job_health_snapshot-malformed-checks
     action: nomad.job_health_snapshot
     env:
@@ -205,6 +205,93 @@ cases:
       status: failure
       exit: [1]
       stderr_contains: ["checks read returned invalid JSON; expected object or null"]
+      stdout_not_contains: ['"allocations_available":']
+  # Zero-byte, empty-object, and invalid checks bodies are selected on the
+  # shared snapshot fixture. SNAPSHOT_CHECKS_MODE is inherited by the action;
+  # a wrapper bin would hide which response the case asked for.
+  - name: nomad.job_health_snapshot-empty-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: empty
+    args: {job: packtest-health}
+    expect:
+      stdout_contains:
+        - '"id":"packtest-health"'
+        - '"running":1'
+        - '"allocations_available":1'
+        - '"id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"'
+        - '"client_status":"running"'
+        - '"checks":[]'
+  - name: nomad.job_health_snapshot-empty-object-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: empty-object
+    args: {job: packtest-health}
+    expect:
+      stdout_contains:
+        - '"id":"packtest-health"'
+        - '"running":1'
+        - '"allocations_available":1'
+        - '"checks":[]'
+  - name: nomad.job_health_snapshot-whitespace-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: whitespace-only
+    args: {job: packtest-health}
+    expect:
+      status: failure
+      exit: [1]
+      stderr_contains: ["allocation aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee checks read returned invalid JSON; expected object or null"]
+      stdout_not_contains: ['"allocations_available":']
+  - name: nomad.job_health_snapshot-scalar-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: scalar
+    args: {job: packtest-health}
+    expect:
+      status: failure
+      exit: [1]
+      stderr_contains: ["allocation aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee checks read returned invalid JSON; expected object or null"]
+      stdout_not_contains: ['"allocations_available":']
+  - name: nomad.job_health_snapshot-multi-value-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: multi-value
+    args: {job: packtest-health}
+    expect:
+      status: failure
+      exit: [1]
+      stderr_contains: ["allocation aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee checks read returned invalid JSON; expected object or null"]
+      stdout_not_contains: ['"allocations_available":']
+  - name: nomad.job_health_snapshot-malformed-json-checks
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: malformed-json
+    args: {job: packtest-health}
+    expect:
+      status: failure
+      exit: [1]
+      stderr_contains: ["allocation aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee checks read returned invalid JSON; expected object or null"]
+      stdout_not_contains: ['"allocations_available":']
+  - name: nomad.job_health_snapshot-checks-command-failure
+    action: nomad.job_health_snapshot
+    env:
+      PATH: /packs/nomad/test/fixtures/snapshot-bin:/opt/emisar/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      SNAPSHOT_CHECKS_MODE: command-failure
+    args: {job: packtest-health}
+    expect:
+      status: failure
+      exit: [7]
+      reason_contains: ["process exited with code 7"]
+      stderr_contains: ["nomad.job_health_snapshot: allocation aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee checks read failed"]
+      stderr_not_contains: ["invalid JSON"]
+      stdout_not_contains: ['"allocations_available":']
   - action: nomad.server_members
     expect:
       stdout_contains: ['"Status":"alive"', '"ServerName"']
