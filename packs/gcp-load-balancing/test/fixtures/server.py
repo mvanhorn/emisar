@@ -21,6 +21,7 @@ def backend():
         "securitySettings": {"awsV4Authentication": {"accessKey": CANARY}},
         "customRequestHeaders": [f"X-Harness-Request: {CANARY}"],
         "customResponseHeaders": [f"X-Harness-Response: {CANARY}"],
+        "enableCDN": True,
         "description": CANARY,
     }
 

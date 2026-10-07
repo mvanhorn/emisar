@@ -15,11 +15,11 @@ cases:
   - action: gcp.backend_services
     args: {project: example-prod}
     expect:
-      stdout_contains: [harness-backend, harness-neg, X-Harness-Request]
+      stdout_contains: [harness-backend, harness-neg, X-Harness-Request, '"enableCdn": true']
   - action: gcp.backend_service_describe
     args: {project: example-prod, backend_service: harness-backend, scope: global}
     expect:
-      stdout_contains: [harness-backend, harness-neg, X-Harness-Request]
+      stdout_contains: [harness-backend, harness-neg, X-Harness-Request, '"enableCdn": true']
   - action: gcp.backend_health
     args: {project: example-prod, backend_service: harness-backend, scope: global}
     expect:
